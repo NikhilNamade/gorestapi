@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"os"
+
 	"example.com/REST-API/db"
 	"example.com/REST-API/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"os"
 	"github.com/joho/godotenv"
 )
 
