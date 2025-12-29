@@ -1,0 +1,5 @@
+package filehandler
+
+func uploadImage(){
+	
+}
