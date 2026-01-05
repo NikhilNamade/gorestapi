@@ -111,7 +111,7 @@ func getDetiailEvents(context *gin.Context){
 		return
 	}
 	result,err := models.GetDetailEvents(userId)
-
+	fmt.Println(result);
 	if err != nil{
 		fmt.Println(err)
 		context.JSON(http.StatusUnauthorized,gin.H{"msg":"Events not found"})

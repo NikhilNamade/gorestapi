@@ -50,21 +50,20 @@ func createTables() {
 	}
 
 	fmt.Println("✅ User table created (or already exists).")
-	
+
 	createEventsTable := `
 	CREATE TABLE IF NOT EXISTS event (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		description TEXT NOT NULL,
-		location TEXT NOT NULL,
-		date_time DATETIME NOT NULL,
-		userId INTEGER,
-		profileImage TEXT,
-		category TEXT,
-		fees INTEGER,
-		FOREIGN KEY(userId) REFERENCES user(id) ON DELETE CASCADE
-	);
-	`
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    location TEXT NOT NULL,  -- JSON stored as TEXT
+    date_time DATETIME NOT NULL,
+    userId INTEGER,
+    profileImage TEXT NOT NULL,
+    category TEXT NOT NULL,
+    fees INTEGER,
+    FOREIGN KEY(userId) REFERENCES user(id) ON DELETE CASCADE
+);`
 
 	_, err = DB.Exec(createEventsTable)
 	if err != nil {
@@ -94,7 +93,7 @@ func createTables() {
 			FOREIGN KEY(userID) REFERENCES user(id) ON DELETE CASCADE
 		)
 	`
-	_,err = DB.Exec(createStoryTables);
+	_, err = DB.Exec(createStoryTables)
 	if err != nil {
 		panic(fmt.Sprintf("❌ Unable to create the story table: %v", err))
 	}
@@ -108,7 +107,7 @@ func createTables() {
 			FOREIGN KEY(followTo) REFERENCES user(id) ON DELETE CASCADE
 		)
 	`
-	_,err = DB.Exec(createFollowingTables);
+	_, err = DB.Exec(createFollowingTables)
 	if err != nil {
 		panic(fmt.Sprintf("❌ Unable to create the connection table: %v", err))
 	}

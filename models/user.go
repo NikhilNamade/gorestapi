@@ -125,3 +125,51 @@ func GetUserById(id int64) (User, error) {
 	}
 	return user, nil
 }
+
+
+func GetUserByEmail(email string)(User,error){
+	query := `SELECT id,name,email FROM user WHERE email = ?`;
+	fmt.Println(email);
+	var user User
+
+	row := db.DB.QueryRow(query,email)
+
+	err := row.Scan(&user.ID,&user.Name,&user.Email)
+
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
+}
+
+func ResetPassword(email string, password string) error {
+	query := `UPDATE user SET password = ? WHERE email = ?`
+
+	// hash new password
+	hashPass, err := utils.HashPass(password)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(hashPass, email)
+	if err != nil {
+		return err
+	}
+
+	// check if user exists
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("user not found")
+	}
+
+	return nil
+}

@@ -8,7 +8,13 @@ import (
 	"example.com/REST-API/models"
 	"github.com/gin-gonic/gin"
 )
-
+type EmailRequest struct {
+	Email string `json:"email"`
+}
+type ResetPass struct{
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
 func signupUser(context *gin.Context) {
 	var user models.User
 
@@ -88,3 +94,45 @@ func getUserById(context *gin.Context) {
 	}
 	context.JSON(http.StatusOK,gin.H{"User":user});
 }
+
+func getUserByEmail(context *gin.Context) {
+	var req EmailRequest
+
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := models.GetUserByEmail(req.Email)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"User": result})
+}
+
+func resetPassword(context *gin.Context) {
+	var data ResetPass
+
+	if err := context.ShouldBindJSON(&data); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	err := models.ResetPassword(data.Email, data.Password)
+	if err != nil {
+		fmt.Println(err);
+		context.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Unable to reset the password",
+		})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"msg": "Password reset successfully",
+	})
+}
+

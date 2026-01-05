@@ -28,7 +28,8 @@ func RegisterRountes(server *gin.Engine) {
 	authenticated.DELETE("/unfollow/:id",disConnect)
 	authenticated.GET("/getConnections",getAllConnectionByUser)
 	authenticated.GET("/getAllUsers", getallUser)
-
+	server.POST("/getUserByEmail",getUserByEmail)
+	server.POST("/resetPassword",resetPassword)
 	server.GET("/events/:id", getEventsById)
 	server.GET("/register", registerGET)
 	server.POST("/signup", signupUser)

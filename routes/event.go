@@ -68,6 +68,7 @@ func uploadToCloudinary(file any, context *gin.Context, fileHeader *multipart.Fi
 
 func createEvents(context *gin.Context) {
 	var events models.Event
+	var Address models.Address
 	err := context.Request.ParseMultipartForm(10 << 20)
 	if err != nil {
 		fmt.Println(err, "2")
@@ -86,10 +87,33 @@ func createEvents(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"msg": "Failed to bind form-data"})
 		return
 	}
-	fmt.Println(dateTime)
+	Address.Location = context.PostForm("location")
+	latStr := context.PostForm("lat")
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		context.JSON(400, gin.H{
+			"error": "Invalid latitude value",
+		})
+		return
+	}
+
+	Address.Lat = lat
+	lgnStr := context.PostForm("lng")
+
+	lgn, err := strconv.ParseFloat(lgnStr, 64)
+	if err != nil {
+		context.JSON(400, gin.H{
+			"error": "Invalid latitude value",
+		})
+		return
+	}
+
+	Address.Lgn = lgn
+
 	events.Name = context.PostForm("name")
 	events.Description = context.PostForm("description")
-	events.Location = context.PostForm("location")
+	events.Location = Address
 	events.Category = context.PostForm("Category")
 	events.Datetime = dateTime
 	feeStr := context.PostForm("Fees")
@@ -132,80 +156,108 @@ func createEvents(context *gin.Context) {
 func updateEvent(context *gin.Context) {
 
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
-
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"msg": "Id not found"})
 		return
 	}
 
-	// var event models.Event
 	event, err := models.GetIDEvent(id)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"msg": "Event not found"})
 		return
 	}
-	// authenticate the user login
+
+	// authenticate user
 	userId := context.GetInt64("userId")
 	if userId != event.UserId {
-		context.JSON(http.StatusBadRequest, gin.H{"msg": "user not valid "})
+		context.JSON(http.StatusBadRequest, gin.H{"msg": "user not valid"})
 		return
 	}
 
 	err = context.Request.ParseMultipartForm(10 << 20)
 	if err != nil {
-		fmt.Println(err, "2")
-		context.JSON(http.StatusBadRequest, gin.H{"msg": "Something wrong happened at server"})
+		context.JSON(http.StatusBadRequest, gin.H{"msg": "Failed to parse form"})
 		return
 	}
 
+	// -------- Address Struct --------
+	var address models.Address
+
+	address.Location = context.PostForm("location")
+
+	latStr := context.PostForm("lat")
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid latitude"})
+		return
+	}
+	address.Lat = lat
+
+	lngStr := context.PostForm("lng")
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid longitude"})
+		return
+	}
+	address.Lgn = lng
+
+	// -------- Other Fields --------
 	name := context.PostForm("name")
 	description := context.PostForm("description")
-	location := context.PostForm("location")
 	category := context.PostForm("Category")
+
 	feeStr := context.PostForm("Fees")
 	fees, err := strconv.Atoi(feeStr)
 	if err != nil {
-		fmt.Println(err)
-		context.JSON(http.StatusBadRequest, gin.H{"msg": "Something wrong happened at server"})
+		context.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid fees"})
 		return
 	}
-	Fees := fees
-	file, header, err := context.Request.FormFile("profile_image")
-	var profileUrl string
+
+	dateTime, err := time.Parse(time.RFC3339, context.PostForm("date_time"))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid date_time"})
+		return
+	}
+
+	// -------- Image Upload --------
+	file, header, err := context.Request.FormFile("event_image")
+	profileUrl := event.Profile
+
 	if err == nil && header != nil {
+		defer file.Close()
 		uploadResult, err := uploadToCloudinary(file, context, header)
 		if err != nil {
-			context.JSON(http.StatusBadRequest, gin.H{"msg": "Unable to upload file"})
+			context.JSON(http.StatusBadRequest, gin.H{"msg": "Unable to upload image"})
 			return
 		}
 		profileUrl = uploadResult
-	} else {
-		profileUrl = context.Request.FormValue("profile_image")
 	}
-	dateTime, err := time.Parse(time.RFC3339, context.Request.FormValue("date_time"))
-	updateEvent := models.Event{
+
+	// -------- Update Event --------
+	updatedEvent := models.Event{
 		ID:          id,
 		Name:        name,
 		Description: description,
-		Location:    location,
+		Location:    address,
 		Datetime:    dateTime,
 		UserId:      userId,
 		Profile:     profileUrl,
 		Category:    category,
-		Fees:        Fees,
-	}
-	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"msg": "Data not found"})
-		return
+		Fees:        fees,
 	}
 
-	err = updateEvent.UpdateEvent()
+	err = updatedEvent.UpdateEvent()
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"msg": "Update not done"})
 		return
 	}
-	context.JSON(http.StatusOK, "")
+
+	context.JSON(http.StatusOK, gin.H{
+		"msg":   "Event updated successfully",
+		"event": updatedEvent,
+	})
 }
+
 
 func deleteEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
@@ -263,8 +315,9 @@ func getEventsUserId(context *gin.Context) {
 
 	result, err := models.GetEventsByUser(userId)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"msg": err});
-		return;
+		context.JSON(http.StatusBadRequest, gin.H{"msg": err})
+		return
 	}
-	context.JSON(http.StatusOK, gin.H{"events":result});
+	context.JSON(http.StatusOK, gin.H{"events": result})
 }
+

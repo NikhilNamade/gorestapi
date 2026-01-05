@@ -158,5 +158,6 @@ func GetDetailEvents(userId int64)([]Event,error){
 
 		events = append(events, event)
 	}
+	fmt.Println(events);
 	return events,nil
 }
