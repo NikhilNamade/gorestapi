@@ -2,8 +2,6 @@ package utils
 
 import (
 	"errors"
-	"time"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 const secretKey = "Thisiseventmanagement"
