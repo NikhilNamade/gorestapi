@@ -11,9 +11,7 @@ const secretKey = "Thisiseventmanagement"
 func GenerateToken(userId int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": userId,
-		"exp":    time.Now().Add(time.Hour * 2).Unix(),
 	})
-
 	return token.SignedString([]byte(secretKey))
 }
 
